@@ -19,8 +19,6 @@ func TestShowTree(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println(buf.String())
-
-	tt := NewTree[string, string]()
 }
 
 func TestBtree_Put(t *testing.T) {

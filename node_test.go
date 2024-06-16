@@ -240,11 +240,15 @@ func TestNode_GetChild(t *testing.T) {
 }
 
 func TestNode_Keys(t *testing.T) {
+	TreeDegree = 3
 	tn := &node[int, string]{}
 	if tn.Keys() != nil {
 		t.Errorf("Keys() expected nil on empty node but got %v", tn.Keys())
 	}
-	tn.Insert(0, "zero")
+	root := tn.Insert(0, "zero")
+	if root != nil {
+		t.Errorf("Unexpected new root %v on Insert", root)
+	}
 	keys := tn.Keys()
 	if len(keys) != 1 {
 		t.Errorf("Keys() expected 1 element but got %d", len(keys))
@@ -252,24 +256,39 @@ func TestNode_Keys(t *testing.T) {
 	if keys[0] != 0 {
 		t.Errorf("Keys() expected element '0' but got %d", keys[0])
 	}
-	tn.Insert(60, "ten")
-	tn.Insert(40, "ten")
-	tn.Insert(10, "ten")
+	root = tn.Insert(60, "sixty")
+	if root != nil {
+		t.Errorf("Unexpected new root %v on Insert", root)
+	}
 	keys = tn.Keys()
-	if len(keys) != 4 {
-		t.Errorf("Keys() expected 4 element but got %d", len(keys))
+	if len(keys) != 2 {
+		t.Errorf("Keys() expected 2 element but got %d", len(keys))
+	}
+
+	root = tn.Insert(40, "fourty")
+	if root == nil {
+		t.Errorf("expected new root on Insert but found none")
+	}
+	keys = root.Keys()
+	if len(keys) != 1 {
+		t.Errorf("Keys() on new root expected 1 element but got %d", len(keys))
+	}
+	if keys[0] != 40 {
+		t.Errorf("Keys() on new root expected 1 element of %d but found %d", 40, keys[0])
+	}
+	keys = tn.Keys()
+	if len(keys) != 1 {
+		t.Errorf("Keys() on new leaf expected 1 element but got %d", len(keys))
+	}
+	if keys[0] != 60 {
+		t.Errorf("Keys() on new leaf expected key %d but found %d", 40, keys[0])
+	}
+	keys = root.Children()[0].Keys()
+	if len(keys) != 1 {
+		t.Errorf("Keys() on new leaf expected 1 element but got %d", len(keys))
 	}
 	if keys[0] != 0 {
-		t.Errorf("Keys() expected element '0' but got %d", keys[0])
-	}
-	if keys[1] != 10 {
-		t.Errorf("Keys() expected element '10' but got %d", keys[0])
-	}
-	if keys[2] != 40 {
-		t.Errorf("Keys() expected element '40' but got %d", keys[0])
-	}
-	if keys[3] != 60 {
-		t.Errorf("Keys() expected element '40' but got %d", keys[0])
+		t.Errorf("Keys() on new leaf expected key %d but found %d", 40, keys[0])
 	}
 }
 
