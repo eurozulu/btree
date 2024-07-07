@@ -2,19 +2,19 @@ package btree
 
 import (
 	"cmp"
-	"github.com/eurozulu/btree/utils"
+	"log"
 )
 
 type TreeIterator[K cmp.Ordered, V any] interface {
 	HasNext() bool
-	Next() []Entry[K, V]
+	Next() []NodeEntry[K, V]
 	Depth() int
 }
 
 type treeIterator[K cmp.Ordered, V any] struct {
-	next      []Entry[K, V]
-	nodes     utils.StackSlice[*node[K, V]]
-	linkEntry Entry[K, V]
+	next      []NodeEntry[K, V]
+	nodes     StackSlice[*node[K, V]]
+	linkEntry *NodeEntry[K, V]
 }
 
 func (it *treeIterator[K, V]) HasNext() bool {
@@ -24,7 +24,7 @@ func (it *treeIterator[K, V]) HasNext() bool {
 	return it.next != nil
 }
 
-func (it *treeIterator[K, V]) Next() []Entry[K, V] {
+func (it *treeIterator[K, V]) Next() []NodeEntry[K, V] {
 	if !it.HasNext() {
 		return nil
 	}
@@ -41,9 +41,9 @@ func (it treeIterator[K, V]) Depth() int {
 	return d
 }
 
-func (it *treeIterator[K, V]) getNext() []Entry[K, V] {
+func (it *treeIterator[K, V]) getNext() []NodeEntry[K, V] {
 	if it.linkEntry != nil {
-		le := []Entry[K, V]{it.linkEntry}
+		le := []NodeEntry[K, V]{*it.linkEntry}
 		it.linkEntry = nil
 		return le
 	}
@@ -60,30 +60,30 @@ func (it *treeIterator[K, V]) getNext() []Entry[K, V] {
 		return nil
 	}
 	it.linkEntry = it.skipToNextNode(leaf)
-	return leaf.Entries()
+	return leaf.Entries
 }
 
 // skipToNextNode positions the nodes stack on the next available leaf node.
-// and returns the sperator entry dividing the two sibling nodes.
+// and returns the seperator entry dividing the two sibling nodes.
 // If the current leaf is the last sibling in the parent, recursively calls itself with the parent node
 // If no more nodes are available, nil is returned.
-func (it *treeIterator[K, V]) skipToNextNode(child *node[K, V]) Entry[K, V] {
+func (it *treeIterator[K, V]) skipToNextNode(child *node[K, V]) *NodeEntry[K, V] {
 	parent, ok := it.nodes.Peek()
 	if !ok {
 		return nil
 	}
-	nextindex := utils.IndexOf(child, parent.children) + 1
+	nextindex := indexOfChild(parent, child) + 1
 	if nextindex == 0 {
 		// not a child of given parent!!!
 		return nil
 	}
-	if nextindex >= len(parent.children) {
+	if nextindex >= len(parent.Children) {
 		// no more siblings in given parent, recursive call with parent as 'child'
 		parent, _ = it.nodes.Pop()
 		return it.skipToNextNode(parent)
 	}
-	it.nodes.Push(parent.children[nextindex])
-	return parent.entries[nextindex-1]
+	it.nodes.Push(&parent.Children[nextindex])
+	return &parent.Entries[nextindex-1]
 }
 
 func (it *treeIterator[K, V]) skipToFirstLeaf(n *node[K, V]) *node[K, V] {
@@ -91,21 +91,35 @@ func (it *treeIterator[K, V]) skipToFirstLeaf(n *node[K, V]) *node[K, V] {
 		if n.IsLeaf() {
 			break
 		}
-		n = n.children[0]
+		n = &n.Children[0]
 		it.nodes.Push(n)
 	}
 	return n
 }
 
-func newTreeIterator[K cmp.Ordered, V any](root *node[K, V]) TreeIterator[K, V] {
-	nodes := utils.StackSlice[*node[K, V]]{}
-	if root != nil && len(root.entries) > 0 {
-		nodes.Push(root)
+func indexOfChild[K cmp.Ordered, V any](parent, child *node[K, V]) int {
+	for i := range parent.Children {
+		if &parent.Children[i] == child {
+			return i
+		}
 	}
+	return -1
+}
 
-	it := &treeIterator[K, V]{nodes: nodes}
-	if root != nil {
-		it.skipToFirstLeaf(root)
+func newTreeIterator[K cmp.Ordered, V any](tree BTree[K, V]) TreeIterator[K, V] {
+	it := &treeIterator[K, V]{
+		nodes: StackSlice[*node[K, V]]{},
+	}
+	if tree != nil {
+		btp, ok := tree.(*bTree[K, V])
+		if !ok {
+			log.Fatalf("expected btree implementaition of tree. found %t", tree)
+		}
+		root := btp.rootnode
+		if root != nil && len(root.Entries) > 0 {
+			it.nodes.Push(root)
+			it.skipToFirstLeaf(root)
+		}
 	}
 	return it
 }
