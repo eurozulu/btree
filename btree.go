@@ -62,8 +62,7 @@ func (b *bTree[K, V]) Remove(key K) error {
 }
 
 func (b bTree[K, V]) Iterate() TreeIterator[K, V] {
-	//TODO implement me
-	panic("implement me")
+	return newTreeIterator[K, V](b.rootnode)
 }
 
 func (b *bTree[K, V]) add(key K, value *V, nd *node[K, V]) *node[K, V] {

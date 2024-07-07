@@ -6,10 +6,9 @@ import (
 
 func TestTreeIterator_HasNext(t *testing.T) {
 	degree := 3
-	bt := NewBTree[int, string](degree)
-
+	bt := createTestTree(degree, 0)
 	// empty node == zero depth
-	walker := newTreeIterator[int, string](bt)
+	walker := bt.Iterate()
 	if walker.HasNext() {
 		t.Error("Expected false HasNext on empty node")
 	}
@@ -17,8 +16,8 @@ func TestTreeIterator_HasNext(t *testing.T) {
 		t.Error("Expected Next as nil on empty node")
 	}
 
-	fillTree(bt, 1)
-	walker = newTreeIterator[int, string](bt)
+	bt = createTestTree(degree, 1)
+	walker = bt.Iterate()
 	if !walker.HasNext() {
 		t.Error("Expected true HasNext on single entry node before next")
 	}
@@ -28,10 +27,9 @@ func TestTreeIterator_HasNext(t *testing.T) {
 	}
 
 	// test tree node tree
-	bt = NewBTree[int, string](degree)
 	testCount := 3
-	fillTree(bt, testCount)
-	walker = newTreeIterator[int, string](bt)
+	bt = createTestTree(degree, testCount)
+	walker = bt.Iterate()
 	for i := 0; i < testCount; i++ {
 		if !walker.HasNext() {
 			t.Errorf("Expected HasNext true with test tree before %d iteration", i+1)
@@ -46,24 +44,25 @@ func TestTreeIterator_HasNext(t *testing.T) {
 }
 
 func TestTreeIterator_Depth(t *testing.T) {
-	walker := newTreeIterator[int, string](nil)
+	degree := 3
+	bt := createTestTree(degree, 0)
+	walker := bt.Iterate()
 	depth := walker.Depth()
 	if depth != 0 {
 		t.Errorf("Expected 0 on Depth with nil root, got %v", depth)
 	}
 
-	degree := 3
 	testCount := 1
-	bt := NewBTree[int, string](degree)
-	fillTree(bt, testCount)
-	walker = newTreeIterator[int, string](bt)
+	bt = createTestTree(degree, testCount)
+	walker = bt.Iterate()
 	depth = walker.Depth()
 	if depth != 1 {
 		t.Errorf("Expected 1 on Depth with one node, got %v", depth)
 	}
 
-	fillTree(bt, 3)
-	walker = newTreeIterator[int, string](bt)
+	testCount = 3
+	bt = createTestTree(degree, testCount)
+	walker = bt.Iterate()
 	depth = walker.Depth()
 	if depth != 2 {
 		t.Errorf("Expected 2 on Depth with three nodes, got %v", depth)
@@ -87,23 +86,19 @@ func TestTreeIterator_Depth(t *testing.T) {
 }
 
 func TestTreeIterator_Next(t *testing.T) {
-	// check nil and empty roots
-	walker := newTreeIterator[int, string](nil)
+	degree := 3
+	testCount := 0
+	bt := createTestTree(degree, testCount)
+	walker := bt.Iterate()
+	// check nil and empty tree
 	next := walker.Next()
 	if next != nil {
 		t.Errorf("Expected nil on Next with nil root, got %v", next)
 	}
 
-	degree := 3
-	bt := NewBTree[int, string](degree)
-	walker = newTreeIterator[int, string](bt)
-	next = walker.Next()
-	if next != nil {
-		t.Errorf("Expected nil on Next with empty node, got %v", next)
-	}
-
-	fillTree(bt, 1)
-	walker = newTreeIterator[int, string](bt)
+	testCount = 1
+	bt = createTestTree(degree, testCount)
+	walker = bt.Iterate()
 	next = walker.Next()
 	if next == nil {
 		t.Errorf("Expected non nil result on Next on single entry node")
@@ -129,10 +124,9 @@ func TestTreeIterator_Next(t *testing.T) {
 		t.Error("Expected false HasNext on single entry node after next")
 	}
 
-	bt = NewBTree[int, string](degree)
-	testCount := 15
-	fillTree(bt, testCount)
-	walker = newTreeIterator[int, string](bt)
+	testCount = 15
+	bt = createTestTree(degree, testCount)
+	walker = bt.Iterate()
 	var total []NodeEntry[int, string]
 	for walker.HasNext() {
 		next = walker.Next()
@@ -159,4 +153,10 @@ func TestTreeIterator_Next(t *testing.T) {
 		}
 		lastKey = entry.Key
 	}
+}
+
+func createTestTree(degree, count int) *bTree[int, string] {
+	bt := NewBTree[int, string](degree)
+	fillTree(bt, count)
+	return bt.(*bTree[int, string])
 }

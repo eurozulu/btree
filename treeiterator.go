@@ -2,7 +2,6 @@ package btree
 
 import (
 	"cmp"
-	"log"
 )
 
 type TreeIterator[K cmp.Ordered, V any] interface {
@@ -106,20 +105,13 @@ func indexOfChild[K cmp.Ordered, V any](parent, child *node[K, V]) int {
 	return -1
 }
 
-func newTreeIterator[K cmp.Ordered, V any](tree BTree[K, V]) TreeIterator[K, V] {
+func newTreeIterator[K cmp.Ordered, V any](rootNode *node[K, V]) TreeIterator[K, V] {
 	it := &treeIterator[K, V]{
 		nodes: StackSlice[*node[K, V]]{},
 	}
-	if tree != nil {
-		btp, ok := tree.(*bTree[K, V])
-		if !ok {
-			log.Fatalf("expected btree implementaition of tree. found %t", tree)
-		}
-		root := btp.rootnode
-		if root != nil && len(root.Entries) > 0 {
-			it.nodes.Push(root)
-			it.skipToFirstLeaf(root)
-		}
+	if rootNode != nil && len(rootNode.Entries) > 0 {
+		it.nodes.Push(rootNode)
+		it.skipToFirstLeaf(rootNode)
 	}
 	return it
 }
