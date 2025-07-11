@@ -12,6 +12,7 @@ type BTree[K cmp.Ordered, V any] interface {
 	Add(key K, value *V) error
 	Remove(key K) error
 	Iterate() TreeIterator[K, V]
+	IsEmpty() bool
 }
 
 type bTree[K cmp.Ordered, V any] struct {
