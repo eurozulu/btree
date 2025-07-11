@@ -27,7 +27,7 @@ func (n node[K, V]) IsLeaf() bool {
 }
 
 func (n node[K, V]) IsEmpty() bool {
-	return len(n.Entries) == 0 && !n.IsLeaf()
+	return n.IsLeaf() && len(n.Entries) == 0
 }
 
 // Get returns the nodeEntry for the given key if it is present in the node or its children.
