@@ -33,6 +33,10 @@ func (b bTree[K, V]) Depth() int {
 	return d
 }
 
+func (b bTree[K, V]) IsEmpty() bool {
+	return b.rootnode.IsEmpty()
+}
+
 func (b bTree[K, V]) Get(key K) *V {
 	ne := b.rootnode.Get(key)
 	if ne == nil {
