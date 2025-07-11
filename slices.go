@@ -34,13 +34,13 @@ func RemoveAtIndex[V any](s []V, index int) []V {
 	return ns
 }
 
-type StackSlice[V any] []V
+type stackSlice[V any] []V
 
-func (s *StackSlice[V]) Push(v V) {
+func (s *stackSlice[V]) Push(v V) {
 	*s = append(*s, v)
 }
 
-func (s *StackSlice[V]) Pop() (V, bool) {
+func (s *stackSlice[V]) Pop() (V, bool) {
 	var v V
 	if s.IsEmpty() {
 		return v, false
@@ -51,7 +51,7 @@ func (s *StackSlice[V]) Pop() (V, bool) {
 	return v, true
 }
 
-func (s *StackSlice[V]) Peek() (V, bool) {
+func (s *stackSlice[V]) Peek() (V, bool) {
 	var v V
 	if s.IsEmpty() {
 		return v, false
@@ -60,6 +60,6 @@ func (s *StackSlice[V]) Peek() (V, bool) {
 	return (*s)[last], true
 }
 
-func (s *StackSlice[V]) IsEmpty() bool {
+func (s *stackSlice[V]) IsEmpty() bool {
 	return len(*s) == 0
 }

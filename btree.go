@@ -2,17 +2,18 @@ package btree
 
 import (
 	"cmp"
+	"context"
 	"log"
 )
 
 type BTree[K cmp.Ordered, V any] interface {
 	Degree() int
 	Depth() int
+	IsEmpty() bool
+	Keys(ctx context.Context) <-chan K
 	Get(key K) *V
 	Add(key K, value *V) error
 	Remove(key K) error
-	Iterate() TreeIterator[K, V]
-	IsEmpty() bool
 }
 
 type bTree[K cmp.Ordered, V any] struct {
@@ -32,6 +33,25 @@ func (b bTree[K, V]) Depth() int {
 		n = &n.Children[0]
 	}
 	return d
+}
+
+func (b bTree[K, V]) Keys(ctx context.Context) <-chan K {
+	ch := make(chan K)
+	go func(ch chan<- K) {
+		defer close(ch)
+		it := newTreeIterator(b.rootnode)
+		for it.HasNext() {
+			nodes := it.Next()
+			for _, node := range nodes {
+				select {
+				case <-ctx.Done():
+					return
+				case ch <- node.Key:
+				}
+			}
+		}
+	}(ch)
+	return ch
 }
 
 func (b bTree[K, V]) IsEmpty() bool {
@@ -66,10 +86,6 @@ func (b *bTree[K, V]) Remove(key K) error {
 	return nil
 }
 
-func (b bTree[K, V]) Iterate() TreeIterator[K, V] {
-	return newTreeIterator[K, V](b.rootnode)
-}
-
 func (b *bTree[K, V]) add(key K, value *V, nd *node[K, V]) *node[K, V] {
 	if nd.IsLeaf() {
 		nd.Insert(key, value)
@@ -84,7 +100,7 @@ func (b *bTree[K, V]) add(key K, value *V, nd *node[K, V]) *node[K, V] {
 }
 
 func (b *bTree[K, V]) addToChild(key K, value *V, nd *node[K, V]) *node[K, V] {
-	i, e := nd.KeyIndex(key)
+	i, e := nd.keyIndex(key)
 	if e != nil {
 		// already exists, update value
 		e.Value = value
@@ -115,7 +131,7 @@ func (b *bTree[K, V]) remove(key K, nd *node[K, V]) (*node[K, V], error) {
 		return nil, nil //TODO review if return node required
 	}
 	// non leaf / parent node
-	i, e := nd.KeyIndex(key)
+	i, e := nd.keyIndex(key)
 	if i < 0 {
 		i = len(nd.Entries)
 	}

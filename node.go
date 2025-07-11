@@ -6,8 +6,8 @@ import (
 	"log"
 )
 
-// NodeEntry represents the container for each Key entry in the Node.
-type NodeEntry[K cmp.Ordered, V any] struct {
+// nodeEntry represents the container for each Key entry in the Node.
+type nodeEntry[K cmp.Ordered, V any] struct {
 	Key   K
 	Value *V
 }
@@ -18,7 +18,7 @@ type NodeEntry[K cmp.Ordered, V any] struct {
 // number of entries, plus one.
 // When no child nodes present, node is known as a leaf node. #IsLeaf returns true.
 type node[K cmp.Ordered, V any] struct {
-	Entries  []NodeEntry[K, V]
+	Entries  []nodeEntry[K, V]
 	Children []node[K, V]
 }
 
@@ -30,10 +30,10 @@ func (n node[K, V]) IsEmpty() bool {
 	return len(n.Entries) == 0 && !n.IsLeaf()
 }
 
-// Get returns the NodeEntry for the given key if it is present in the node or its children.
+// Get returns the nodeEntry for the given key if it is present in the node or its children.
 // If the key is not found, nil is returned.
-func (n *node[K, V]) Get(key K) *NodeEntry[K, V] {
-	i, e := n.KeyIndex(key)
+func (n *node[K, V]) Get(key K) *nodeEntry[K, V] {
+	i, e := n.keyIndex(key)
 	if e != nil {
 		return e
 	}
@@ -52,13 +52,13 @@ func (n *node[K, V]) Insert(key K, value *V) {
 	if !n.IsLeaf() {
 		log.Panicf("Can not insert %v into a non leaf node", key)
 	}
-	i, e := n.KeyIndex(key)
+	i, e := n.keyIndex(key)
 	if i < 0 {
 		// no existing key > new key, append to the end
 		i = len(n.Entries)
 	}
 	if e == nil {
-		n.Entries = InsertAtIndex(NodeEntry[K, V]{}, n.Entries, i)
+		n.Entries = InsertAtIndex(nodeEntry[K, V]{}, n.Entries, i)
 		e = &n.Entries[i]
 	}
 	e.Key = key
@@ -67,7 +67,7 @@ func (n *node[K, V]) Insert(key K, value *V) {
 
 // Delete the given key from this node
 func (n *node[K, V]) Delete(key K) error {
-	i, e := n.KeyIndex(key)
+	i, e := n.keyIndex(key)
 	if e == nil {
 		return fmt.Errorf("key %v is unknown", key)
 	}
@@ -89,12 +89,12 @@ func (n *node[K, V]) Split() *node[K, V] {
 		child2.Children = append(child2.Children, n.Children[m+1:]...)
 	}
 	return &node[K, V]{
-		Entries:  []NodeEntry[K, V]{n.Entries[m]},
+		Entries:  []nodeEntry[K, V]{n.Entries[m]},
 		Children: []node[K, V]{*child1, *child2},
 	}
 }
 
-func (n node[K, V]) LastEntry() *NodeEntry[K, V] {
+func (n node[K, V]) LastEntry() *nodeEntry[K, V] {
 	if len(n.Entries) == 0 {
 		return nil
 	}
@@ -163,9 +163,9 @@ func (n *node[K, V]) getPreceeedingNode(nd *node[K, V]) *node[K, V] {
 
 // keyIndex searches the nodes Entries for a matching key.
 // If the key is found, the index in the Entries slice and the Entry iteself are returned.
-// If the key is not found, but a key in this node is greater than the given key, tha index of the larger key is returned with a nil NodeEntry.
+// If the key is not found, but a key in this node is greater than the given key, tha index of the larger key is returned with a nil nodeEntry.
 // If the given key is not in the Entries AND greater than all those keys, -1 and nil are returned.
-func (n *node[K, V]) KeyIndex(key K) (int, *NodeEntry[K, V]) {
+func (n *node[K, V]) keyIndex(key K) (int, *nodeEntry[K, V]) {
 	for i, entry := range n.Entries {
 		c := cmp.Compare(key, entry.Key)
 		if c == 0 {
