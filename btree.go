@@ -35,6 +35,16 @@ func (b bTree[K, V]) Depth() int {
 	return d
 }
 
+func (b bTree[K, V]) Count() int {
+	count := 0
+	it := newTreeIterator(b.rootnode)
+	for it.HasNext() {
+		nodes := it.Next()
+		count += len(nodes)
+	}
+	return count
+}
+
 func (b bTree[K, V]) Keys(ctx context.Context) <-chan K {
 	ch := make(chan K)
 	go func(ch chan<- K) {
@@ -42,11 +52,11 @@ func (b bTree[K, V]) Keys(ctx context.Context) <-chan K {
 		it := newTreeIterator(b.rootnode)
 		for it.HasNext() {
 			nodes := it.Next()
-			for _, node := range nodes {
+			for _, n := range nodes {
 				select {
 				case <-ctx.Done():
 					return
-				case ch <- node.Key:
+				case ch <- n.Key:
 				}
 			}
 		}

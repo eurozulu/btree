@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"math/rand"
+	"runtime"
 	"sort"
 	"strconv"
 	"testing"
@@ -365,8 +366,12 @@ func keyForInt(i int) string {
 }
 
 func TestCompareToHashmap(t *testing.T) {
-	count := 1000000
+	count := 10000000
 	testChecks := 100000
+	var memRef runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&memRef)
+
 	bt := NewBTree[int, string](100)
 	tm := time.Now()
 	fillTree(bt, count)
@@ -385,6 +390,9 @@ func TestCompareToHashmap(t *testing.T) {
 		}
 	}
 	t.Logf("took %v to read tree %d times\n", time.Since(tm), testChecks)
+	showMemoryStats(&memRef)
+	runtime.GC()
+	runtime.ReadMemStats(&memRef)
 
 	m := make(map[string]interface{}, count)
 	tm = time.Now()
@@ -403,8 +411,34 @@ func TestCompareToHashmap(t *testing.T) {
 			t.Errorf("Invalid value for key %s in map, expected %d, got %d", key, v, nv.(int))
 		}
 	}
-	t.Logf("took %v to read map %d times\n", time.Since(tm), testChecks)
 
+	t.Logf("took %v to read map %d times\n", time.Since(tm), testChecks)
+	showMemoryStats(&memRef)
+}
+
+func showMemoryStats(ref *runtime.MemStats) {
+	var memNow runtime.MemStats
+	runtime.ReadMemStats(&memNow)
+	totalMem := memNow.TotalAlloc - ref.TotalAlloc
+	totalAllocs := memNow.Mallocs - ref.Mallocs
+	fmt.Printf("total memory used: %s  (%d)\n", byteString(totalMem), totalMem)
+	fmt.Printf("mallocs: %d\n", totalAllocs)
+}
+
+var byteNames = []string{
+	"bytes", "kilobytes", "megabytes", "gigabytes",
+}
+
+func byteString(size uint64) string {
+	i := 0
+	s := float64(size)
+	for ; s > 1024; s /= 1024 {
+		if i+1 >= len(byteNames) {
+			break
+		}
+		i++
+	}
+	return fmt.Sprintf("%f %s", s, byteNames[i])
 }
 
 func fillMap(m map[string]interface{}, count int) error {
