@@ -14,6 +14,7 @@ type BTree[K cmp.Ordered, V any] interface {
 	Get(key K) *V
 	Add(key K, value *V) error
 	Remove(key K) error
+	Count() int
 }
 
 type bTree[K cmp.Ordered, V any] struct {
